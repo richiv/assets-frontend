@@ -57,6 +57,45 @@ var ajaxCallbacks = {
       }
     }
   },
+  clientSecretResponse: {
+    callbacks: {
+      success: function(response, $element, data, helpers, targets, container, type, actions) {
+        var $containerElem = $element.parent('.js-mask-container').first();
+        var $control = $containerElem.find('.js-mask-control').first();
+
+        // trigger success event
+        $control.trigger('authenticationSuccess', response.clientSecret);
+
+        // reset form state
+        helpers.utilities.setFormState($element, false);
+        helpers.resetForms(helpers, type, data, container);
+        $element[0].reset();
+
+        // call super
+        helpers.base.success.apply(null, arguments);
+      },
+      error: function(response, $element, data, helpers, targets, container, type) {
+        var $containerElem = $element.parent('.js-mask-container').first();
+        var $control = $containerElem.find('.js-mask-control').first();
+        var redirectUrl = $element.data('error-redirect-url');
+
+        // redirect to locked account url
+        if (response.responseJSON.code === 'LOCKED_ACCOUNT') {
+           window.location = redirectUrl;
+        }
+
+        // trigger failed state
+        $control.trigger('authenticationFailed', response.responseJSON.message);
+
+        // reset form state
+        helpers.utilities.setFormState($element, false);
+
+        // call super
+        helpers.base.error.apply(null, arguments);
+
+      }
+    }
+  },
   apiSubscribeResponse: {
     callbacks: {
       success: function(response, $element, data, helpers) {
@@ -66,8 +105,8 @@ var ajaxCallbacks = {
           $off = $parent.find('[data-toggle-subscribe="off"]'),
           formContext = $element.find('[name=context]').val(),
           formVersion = $element.find('[name=version]').val(),
-          isAdmin =  $element.is('[data-role-admin]'),
-          offUrl =  $element.data('off-url'),
+          isAdmin = $element.is('[data-role-admin]'),
+          offUrl = $element.data('off-url'),
           $offLink;
 
         // remove any error already displayed
